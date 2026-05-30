@@ -7,34 +7,48 @@
 
 #include "display_colors.h"
 
-// A scrolling WPM line graph drawn behind the layer name. Each tick the newest
-// WPM sample is pushed in from the right (lv_chart SHIFT mode) so it reads like
-// an oscilloscope line reacting to typing. Kept translucent so the layer name
-// stays readable on top.
+// A scrolling WPM line graph drawn behind the layer name. Each tick the current
+// WPM (eased toward its target) is pushed in from the right (lv_chart SHIFT
+// mode), giving an oscilloscope-like line behind the text. lv_chart draws plain
+// polylines, so smoothness comes from many closely-spaced points plus easing
+// the value (no hard vertical steps) and rounded line joins.
 
 #define WAVE_W 260
 #define WAVE_H 90
 #define WPM_MAX 120
-#define WAVE_POINTS 50
-#define TICK_MS 150
+#define WAVE_POINTS 130   // ~2px apart across 260px
+#define TICK_FAST_MS 50   // while there is motion
+#define TICK_SLOW_MS 400  // while idle/flat, to cut redraw load
+#define EASE_FACTOR 0.20f // value approaches target by this fraction per tick
 #define WAVE_OPA LV_OPA_50
 #define WAVE_LINE_WIDTH 2
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 static struct k_work_delayable wave_work;
+static float displayed; // eased WPM
 
 static void wave_tick(struct k_work *work) {
-    int wpm = zmk_wpm_get_state();
-    if (wpm > WPM_MAX) {
-        wpm = WPM_MAX;
+    float target = (float)zmk_wpm_get_state();
+    if (target > WPM_MAX) {
+        target = WPM_MAX;
     }
+
+    float diff = target - displayed;
+    bool moving = (diff > 0.5f || diff < -0.5f);
+    displayed += diff * EASE_FACTOR;
+    if (!moving) {
+        displayed = target;
+    }
+
+    int value = (int)(displayed + 0.5f);
 
     struct zmk_widget_wpm_wave *widget;
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
-        lv_chart_set_next_value(widget->obj, widget->series, wpm);
+        lv_chart_set_next_value(widget->obj, widget->series, value);
     }
 
-    k_work_schedule(&wave_work, K_MSEC(TICK_MS));
+    bool active = moving || target > 0.5f || displayed > 0.5f;
+    k_work_schedule(&wave_work, K_MSEC(active ? TICK_FAST_MS : TICK_SLOW_MS));
 }
 
 int zmk_widget_wpm_wave_init(struct zmk_widget_wpm_wave *widget, lv_obj_t *parent) {
@@ -51,9 +65,10 @@ int zmk_widget_wpm_wave_init(struct zmk_widget_wpm_wave *widget, lv_obj_t *paren
     lv_chart_set_div_line_count(widget->obj, 0, 0);
     lv_chart_set_update_mode(widget->obj, LV_CHART_UPDATE_MODE_SHIFT);
 
-    // Continuous line, no dot markers.
+    // Continuous, rounded line; no dot markers.
     lv_obj_set_style_line_width(widget->obj, WAVE_LINE_WIDTH, LV_PART_ITEMS);
     lv_obj_set_style_line_opa(widget->obj, WAVE_OPA, LV_PART_ITEMS);
+    lv_obj_set_style_line_rounded(widget->obj, true, LV_PART_ITEMS);
     lv_obj_set_style_width(widget->obj, 0, LV_PART_INDICATOR);
     lv_obj_set_style_height(widget->obj, 0, LV_PART_INDICATOR);
 
@@ -64,7 +79,7 @@ int zmk_widget_wpm_wave_init(struct zmk_widget_wpm_wave *widget, lv_obj_t *paren
     sys_slist_append(&widgets, &widget->node);
 
     k_work_init_delayable(&wave_work, wave_tick);
-    k_work_schedule(&wave_work, K_MSEC(TICK_MS));
+    k_work_schedule(&wave_work, K_MSEC(TICK_FAST_MS));
 
     return 0;
 }
