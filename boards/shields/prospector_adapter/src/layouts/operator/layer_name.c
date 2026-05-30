@@ -1,6 +1,7 @@
 #include "layer_name.h"
 
 #include <ctype.h>
+#include <string.h>
 
 #include <zmk/display.h>
 #include <zmk/events/layer_state_changed.h>
@@ -11,6 +12,22 @@
 #include "display_colors.h"
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
+
+// Widest the layer name may render. The widget is 260px wide; leaving ~18px
+// on each side keeps a little breathing room (the requested left/right margin).
+#define LAYER_NAME_MAX_WIDTH 224
+
+// Font candidates from largest to smallest. The largest font whose WIDEST
+// layer name still fits within LAYER_NAME_MAX_WIDTH is used for every layer,
+// so the size is chosen for the longest name (e.g. "SIGN&CALC") and stays
+// consistent across layers.
+static const lv_font_t *const FONT_LADDER[] = {
+    &FR_Regular_48,
+    &FR_Regular_36,
+    &FR_Medium_32,
+    &FR_Regular_30,
+};
+#define FONT_LADDER_LEN (sizeof(FONT_LADDER) / sizeof(FONT_LADDER[0]))
 
 struct layer_name_state {
     uint8_t index;
@@ -30,6 +47,29 @@ static void resolve_layer_name(uint8_t index, char *out, size_t out_len) {
         out[i] = toupper((unsigned char)out[i]);
     }
 #endif
+}
+
+// Pick the largest font whose widest layer name fits the available width.
+static const lv_font_t *pick_layer_font(void) {
+    for (size_t f = 0; f < FONT_LADDER_LEN; f++) {
+        const lv_font_t *font = FONT_LADDER[f];
+        int32_t widest = 0;
+
+        for (uint8_t i = 0; i < ZMK_KEYMAP_LAYERS_LEN; i++) {
+            char name[32];
+            resolve_layer_name(i, name, sizeof(name));
+            int32_t w = lv_text_get_width(name, strlen(name), font, 0);
+            if (w > widest) {
+                widest = w;
+            }
+        }
+
+        if (widest <= LAYER_NAME_MAX_WIDTH) {
+            return font;
+        }
+    }
+
+    return FONT_LADDER[FONT_LADDER_LEN - 1];
 }
 
 static void layer_name_update_cb(struct layer_name_state state) {
@@ -60,7 +100,7 @@ int zmk_widget_layer_name_init(struct zmk_widget_layer_name *widget, lv_obj_t *p
 
     widget->label = lv_label_create(widget->obj);
     lv_label_set_long_mode(widget->label, LV_LABEL_LONG_CLIP);
-    lv_obj_set_style_text_font(widget->label, &FR_Regular_48, LV_PART_MAIN);
+    lv_obj_set_style_text_font(widget->label, pick_layer_font(), LV_PART_MAIN);
     lv_obj_set_style_text_color(widget->label, lv_color_hex(DISPLAY_COLOR_LAYER_TEXT), LV_PART_MAIN);
     lv_obj_set_style_text_align(widget->label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
 
