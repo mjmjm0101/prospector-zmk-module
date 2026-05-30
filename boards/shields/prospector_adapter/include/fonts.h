@@ -44,5 +44,6 @@ LV_FONT_DECLARE(FR_Regular_48);
 LV_FONT_DECLARE(FR_Regular_36);
 LV_FONT_DECLARE(FR_Regular_30);
 LV_FONT_DECLARE(DINish_Medium_24);
+LV_FONT_DECLARE(DINishCondensed_SemiBold_20);
 
 #endif

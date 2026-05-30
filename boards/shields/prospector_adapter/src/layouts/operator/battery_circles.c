@@ -470,8 +470,10 @@ int zmk_widget_battery_circles_init(struct zmk_widget_battery_circles *widget, l
             lv_obj_t *label = lv_label_create(label_box);
             peripheral_labels[i] = label;
             lv_label_set_text(label, "-");
-            lv_obj_set_style_text_font(label, &DINish_Medium_24, LV_PART_MAIN);
-            lv_obj_set_style_text_letter_space(label, -1, LV_PART_MAIN);
+            // Condensed 20px so a 3-digit "100" keeps a little side margin in
+            // the 25px box (was DINish_Medium_24, which filled it edge to edge).
+            lv_obj_set_style_text_font(label, &DINishCondensed_SemiBold_20, LV_PART_MAIN);
+            lv_obj_set_style_text_letter_space(label, 0, LV_PART_MAIN);
             lv_obj_add_style(label, &style_label_disconnected, LV_PART_MAIN);
             lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
         }
