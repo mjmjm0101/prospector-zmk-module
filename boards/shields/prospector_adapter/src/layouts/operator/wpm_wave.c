@@ -16,10 +16,11 @@
 #define WAVE_W 260
 #define WAVE_H 90
 #define WPM_MAX 120
-#define WAVE_POINTS 130   // ~2px apart across 260px
+#define WAVE_SCALE 16     // sub-WPM vertical resolution (avoids stair-stepping)
+#define WAVE_POINTS 150   // ~1.7px apart across 260px
 #define TICK_FAST_MS 50   // while there is motion
 #define TICK_SLOW_MS 400  // while idle/flat, to cut redraw load
-#define EASE_FACTOR 0.20f // value approaches target by this fraction per tick
+#define EASE_FACTOR 0.10f // value approaches target by this fraction per tick
 #define WAVE_OPA LV_OPA_50
 #define WAVE_LINE_WIDTH 3
 
@@ -40,7 +41,7 @@ static void wave_tick(struct k_work *work) {
         displayed = target;
     }
 
-    int value = (int)(displayed + 0.5f);
+    int value = (int)(displayed * WAVE_SCALE + 0.5f);
 
     struct zmk_widget_wpm_wave *widget;
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
@@ -61,7 +62,7 @@ int zmk_widget_wpm_wave_init(struct zmk_widget_wpm_wave *widget, lv_obj_t *paren
 
     lv_chart_set_type(widget->obj, LV_CHART_TYPE_LINE);
     lv_chart_set_point_count(widget->obj, WAVE_POINTS);
-    lv_chart_set_range(widget->obj, LV_CHART_AXIS_PRIMARY_Y, 0, WPM_MAX);
+    lv_chart_set_range(widget->obj, LV_CHART_AXIS_PRIMARY_Y, 0, WPM_MAX * WAVE_SCALE);
     lv_chart_set_div_line_count(widget->obj, 0, 0);
     lv_chart_set_update_mode(widget->obj, LV_CHART_UPDATE_MODE_SHIFT);
 
