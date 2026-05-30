@@ -414,18 +414,23 @@ int zmk_widget_battery_circles_init(struct zmk_widget_battery_circles *widget, l
     } else if (PERIPHERAL_COUNT == 2) {
         int arc_size = 58;
         int y_center = (62 - arc_size) / 2;
-        // Spread the two arcs to the far left/right edges so the output
-        // widget can sit in the gap between them (left batt | output | right
-        // batt). Widget spans the full bottom width; arc 1 hugs the right edge.
-        int widget_width = 240;
-        int spacing = widget_width - arc_size; // arc 0 at x=0, arc 1 at far right
+        // Lay out the bottom row as: left batt | output | right batt, spaced
+        // like CSS justify-content: space-evenly across the full status-screen
+        // width (260, matching the layer/dots rows above). The output widget is
+        // placed in the centre gap by status_screen.c. With 4 equal gaps:
+        //   gap = (260 - arc - OUTPUT_WIDTH - arc) / 4
+        // arc 0 sits one gap in from the left, arc 1 one gap in from the right.
+        int widget_width = 260;
+        int output_width = 116; // keep in sync with the output widget
+        int gap = (widget_width - 2 * arc_size - output_width) / 4;
+        int arc_x[2] = {gap, widget_width - gap - arc_size};
         lv_obj_set_size(widget->obj, widget_width, 62);
 
         for (int i = 0; i < 2; i++) {
             lv_obj_t *arc = lv_arc_create(widget->obj);
             peripheral_arcs[i] = arc;
             lv_obj_set_size(arc, arc_size, arc_size);
-            lv_obj_set_pos(arc, i * spacing, y_center);
+            lv_obj_set_pos(arc, arc_x[i], y_center);
             lv_arc_set_range(arc, 0, 100);
             lv_arc_set_value(arc, 0);
             lv_arc_set_bg_angles(arc, 270, 180);
