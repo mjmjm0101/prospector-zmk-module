@@ -414,7 +414,12 @@ int zmk_widget_battery_circles_init(struct zmk_widget_battery_circles *widget, l
     } else if (PERIPHERAL_COUNT == 2) {
         int arc_size = 58;
         int y_center = (62 - arc_size) / 2;
-        int spacing = 66;
+        // Spread the two arcs to the far left/right edges so the output
+        // widget can sit in the gap between them (left batt | output | right
+        // batt). Widget spans the full bottom width; arc 1 hugs the right edge.
+        int widget_width = 240;
+        int spacing = widget_width - arc_size; // arc 0 at x=0, arc 1 at far right
+        lv_obj_set_size(widget->obj, widget_width, 62);
 
         for (int i = 0; i < 2; i++) {
             lv_obj_t *arc = lv_arc_create(widget->obj);
