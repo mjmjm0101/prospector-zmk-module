@@ -475,10 +475,10 @@ int zmk_widget_battery_circles_init(struct zmk_widget_battery_circles *widget, l
             lv_obj_set_style_text_font(label, &DINishCondensed_SemiBold_20, LV_PART_MAIN);
             lv_obj_set_style_text_letter_space(label, 0, LV_PART_MAIN);
             lv_obj_add_style(label, &style_label_disconnected, LV_PART_MAIN);
-            // This font has a 4px descent (base_line=4): glyphs sit in the upper
-            // part of their line box, so centering leaves uneven top/bottom
-            // margins. Nudge down ~base_line/2 to balance them in the 25px box.
-            lv_obj_align(label, LV_ALIGN_CENTER, 0, 2);
+            // This font has a 4px descent (base_line=4): glyphs sit slightly
+            // high in their line box, so centering leaves uneven top/bottom
+            // margins. Nudge down 1px to balance them in the 25px box.
+            lv_obj_align(label, LV_ALIGN_CENTER, 0, 1);
         }
 
     } else {
