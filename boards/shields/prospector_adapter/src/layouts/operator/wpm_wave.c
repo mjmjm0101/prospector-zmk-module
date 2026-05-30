@@ -21,7 +21,7 @@
 #define TICK_SLOW_MS 400  // while idle/flat, to cut redraw load
 #define EASE_FACTOR 0.20f // value approaches target by this fraction per tick
 #define WAVE_OPA LV_OPA_50
-#define WAVE_LINE_WIDTH 2
+#define WAVE_LINE_WIDTH 3
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 static struct k_work_delayable wave_work;
