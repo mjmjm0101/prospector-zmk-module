@@ -1,6 +1,7 @@
 #include <lvgl.h>
 
 #include "modifier_indicator.h"
+#include "wpm_wave.h"
 #include "layer_name.h"
 #include "layer_display.h"
 #include "battery_circles.h"
@@ -9,6 +10,7 @@
 #include <fonts.h>
 
 static struct zmk_widget_modifier_indicator modifier_indicator_widget;
+static struct zmk_widget_wpm_wave wpm_wave_widget;
 static struct zmk_widget_layer_name layer_name_widget;
 static struct zmk_widget_layer_display layer_display_widget;
 static struct zmk_widget_battery_circles battery_circles_widget;
@@ -21,6 +23,12 @@ lv_obj_t *zmk_display_status_screen() {
 
     zmk_widget_modifier_indicator_init(&modifier_indicator_widget, screen);
     lv_obj_set_pos(zmk_widget_modifier_indicator_obj(&modifier_indicator_widget), 25, 8);
+
+    // WPM waveform sits behind the layer name (same area). Created first so it
+    // is drawn underneath; the layer name's background is transparent, so the
+    // animated bars show through behind the text.
+    zmk_widget_wpm_wave_init(&wpm_wave_widget, screen);
+    lv_obj_set_pos(zmk_widget_wpm_wave_obj(&wpm_wave_widget), 10, 42);
 
     zmk_widget_layer_name_init(&layer_name_widget, screen);
     lv_obj_set_pos(zmk_widget_layer_name_obj(&layer_name_widget), 10, 42);
