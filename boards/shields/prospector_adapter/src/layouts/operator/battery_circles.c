@@ -427,13 +427,27 @@ int zmk_widget_battery_circles_init(struct zmk_widget_battery_circles *widget, l
         lv_obj_set_size(widget->obj, widget_width, 62);
 
         for (int i = 0; i < 2; i++) {
+            // Mirror the right arc (i == 1) horizontally so the pair is
+            // symmetric: its ring gap, number box and fill direction flip to
+            // the right side. Only the geometry is mirrored - the number label
+            // is a normal child, so its digits stay upright (not flipped).
+            bool mirror = (i == 1);
+
             lv_obj_t *arc = lv_arc_create(widget->obj);
             peripheral_arcs[i] = arc;
             lv_obj_set_size(arc, arc_size, arc_size);
             lv_obj_set_pos(arc, arc_x[i], y_center);
             lv_arc_set_range(arc, 0, 100);
             lv_arc_set_value(arc, 0);
-            lv_arc_set_bg_angles(arc, 270, 180);
+            if (mirror) {
+                // Gap in the top-right; indicator fills from the top counter-clockwise.
+                lv_arc_set_bg_angles(arc, 0, 270);
+                lv_arc_set_mode(arc, LV_ARC_MODE_REVERSE);
+            } else {
+                // Gap in the top-left; indicator fills from the top clockwise.
+                lv_arc_set_bg_angles(arc, 270, 180);
+                lv_arc_set_mode(arc, LV_ARC_MODE_NORMAL);
+            }
             lv_arc_set_rotation(arc, 0);
             lv_obj_set_style_arc_width(arc, ARC_WIDTH_DISCONNECTED, LV_PART_MAIN);
             lv_obj_set_style_arc_width(arc, ARC_WIDTH_DISCONNECTED, LV_PART_INDICATOR);
@@ -445,7 +459,8 @@ int zmk_widget_battery_circles_init(struct zmk_widget_battery_circles *widget, l
             lv_obj_t *label_box = lv_obj_create(arc);
             peripheral_label_boxes[i] = label_box;
             lv_obj_set_size(label_box, 25, 25);
-            lv_obj_set_pos(label_box, 0, 0);
+            // Number box: top-left for the left arc, top-right for the mirrored right arc.
+            lv_obj_set_pos(label_box, mirror ? (arc_size - 25) : 0, 0);
             lv_obj_set_style_bg_opa(label_box, LV_OPA_COVER, LV_PART_MAIN);
             lv_obj_set_style_radius(label_box, 2, LV_PART_MAIN);
             lv_obj_set_style_border_width(label_box, 0, LV_PART_MAIN);
