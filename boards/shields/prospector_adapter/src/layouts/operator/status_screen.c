@@ -9,6 +9,10 @@
 
 #include <fonts.h>
 
+#if IS_ENABLED(CONFIG_PROSPECTOR_TOUCH_OUTPUT_MENU)
+#include <output_menu.h>
+#endif
+
 static struct zmk_widget_modifier_indicator modifier_indicator_widget;
 static struct zmk_widget_wpm_wave wpm_wave_widget;
 static struct zmk_widget_layer_name layer_name_widget;
@@ -45,6 +49,11 @@ lv_obj_t *zmk_display_status_screen() {
 
     zmk_widget_output_init(&output_widget, screen);
     lv_obj_set_pos(zmk_widget_output_obj(&output_widget), 82, 170);
+
+#if IS_ENABLED(CONFIG_PROSPECTOR_TOUCH_OUTPUT_MENU)
+    // Long-press anywhere on the lit screen opens the output-select menu.
+    prospector_output_menu_attach(screen);
+#endif
 
     return screen;
 }

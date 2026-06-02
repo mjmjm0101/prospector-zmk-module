@@ -81,3 +81,13 @@ config PROSPECTOR_LAYER_NAME_UPPERCASE
     default y
     help
       When enabled, layer names will be converted to uppercase for display.
+
+config PROSPECTOR_TOUCH_OUTPUT_MENU
+    bool "Touch output-select menu (long-press to open)"
+    default n
+    depends on ZMK_POINTING && LV_Z_POINTER_INPUT
+    help
+      Long-press the lit display to open an on-screen menu for selecting the
+      output endpoint (USB / BT1-BT4) and clearing a paired BLE profile.
+      Requires a touch controller (e.g. Hynitron CST816S) wired as an LVGL
+      pointer input. Currently implemented for the operator layout.
