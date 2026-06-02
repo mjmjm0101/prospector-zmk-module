@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <lvgl.h>
 
+#include <zephyr/kernel.h>
+
 #include <zmk/ble.h>
 #include <zmk/endpoints.h>
 #include <zmk/endpoints_types.h>
@@ -33,9 +35,11 @@ LOG_MODULE_REGISTER(output_menu, 4);
  * Labels are ASCII only: the operator layout's default font has no Japanese
  * glyphs.
  *
- * All callbacks run on the LVGL/display thread, so the zmk_endpoint_* /
- * zmk_ble_* calls (which internally defer to a work queue) and the LVGL object
- * mutations here are safe.
+ * The button callbacks run on the LVGL/display thread. LVGL object mutations
+ * stay there, but the endpoint/BLE changes (transport switch, profile select,
+ * bond clear) are handed to the system work queue via endpoint_work so they run
+ * in the same context ZMK normally drives them from, rather than from the
+ * display thread.
  */
 
 #define BT_PROFILE_COUNT MIN(4, ZMK_BLE_PROFILE_COUNT)
@@ -58,6 +62,34 @@ static void close_menu(void);
 static void build_menu(void);
 static void build_confirm(void);
 static void on_click(lv_event_t *e);
+
+/* Endpoint/BLE changes are deferred off the display thread onto the system
+ * work queue. Clicks are serialised on the display thread, so a single pending
+ * slot is enough. */
+enum endpoint_op { OP_NONE = 0, OP_USB, OP_BT, OP_CLEAR };
+static enum endpoint_op pending_op;
+static uint8_t pending_bt_index;
+
+static void endpoint_work_cb(struct k_work *work) {
+    ARG_UNUSED(work);
+    switch (pending_op) {
+    case OP_USB:
+        zmk_endpoint_set_preferred_transport(ZMK_TRANSPORT_USB);
+        break;
+    case OP_BT:
+        zmk_endpoint_set_preferred_transport(ZMK_TRANSPORT_BLE);
+        zmk_ble_prof_select(pending_bt_index);
+        break;
+    case OP_CLEAR:
+        zmk_ble_clear_bonds(); /* clears the active profile, then re-advertises */
+        break;
+    default:
+        break;
+    }
+    pending_op = OP_NONE;
+}
+
+static K_WORK_DEFINE(endpoint_work, endpoint_work_cb);
 
 static void auto_close_cb(lv_timer_t *timer) {
     ARG_UNUSED(timer);
@@ -104,14 +136,15 @@ static void on_click(lv_event_t *e) {
     arm_auto_close();
 
     if (action == ACTION_USB) {
-        zmk_endpoint_set_preferred_transport(ZMK_TRANSPORT_USB);
+        pending_op = OP_USB;
+        k_work_submit(&endpoint_work);
         close_menu();
         return;
     }
     if (action >= ACTION_BT_BASE && action < ACTION_BT_BASE + BT_PROFILE_COUNT) {
-        uint8_t idx = action - ACTION_BT_BASE;
-        zmk_endpoint_set_preferred_transport(ZMK_TRANSPORT_BLE);
-        zmk_ble_prof_select(idx);
+        pending_bt_index = action - ACTION_BT_BASE;
+        pending_op = OP_BT;
+        k_work_submit(&endpoint_work);
         close_menu();
         return;
     }
@@ -122,7 +155,8 @@ static void on_click(lv_event_t *e) {
     if (action == ACTION_CONFIRM_YES) {
         /* CLEAR is only offered for the active (selected) profile, so clearing
          * the active profile's bond is correct. */
-        zmk_ble_clear_bonds();
+        pending_op = OP_CLEAR;
+        k_work_submit(&endpoint_work);
         close_menu();
         return;
     }
