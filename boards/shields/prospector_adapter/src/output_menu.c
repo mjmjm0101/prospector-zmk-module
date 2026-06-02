@@ -196,11 +196,9 @@ static void build_menu(void) {
                     active, (enum menu_action)(ACTION_BT_BASE + i));
     }
 
-    /* CLEAR only when the active output is a paired BLE profile. */
-    if (!is_usb && active_ble >= 0 && !zmk_ble_profile_is_open((uint8_t)active_ble)) {
-        make_button(s_overlay, "CLEAR", 92, DISPLAY_COLOR_WPM_BAR_ACTIVE, 0xffffff, false,
-                    ACTION_CLEAR);
-    }
+    /* CLEAR is always shown so the active profile can be unpaired at any time. */
+    make_button(s_overlay, "CLEAR", 92, DISPLAY_COLOR_WPM_BAR_ACTIVE, 0xffffff, false,
+                ACTION_CLEAR);
 }
 
 static void build_confirm(void) {
