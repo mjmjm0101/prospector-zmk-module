@@ -77,7 +77,7 @@ static void make_button(lv_obj_t *parent, const char *text, int width_pct, uint3
     lv_color_t base = lv_color_hex(bg);
 
     lv_obj_t *btn = lv_obj_create(parent);
-    lv_obj_set_size(btn, lv_pct(width_pct), 44);
+    lv_obj_set_size(btn, lv_pct(width_pct), 52);
     lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_radius(btn, 6, LV_PART_MAIN);
@@ -146,8 +146,6 @@ static void build_menu(void) {
     struct zmk_endpoint_instance selected = zmk_endpoint_get_selected();
     bool is_usb = (selected.transport == ZMK_TRANSPORT_USB);
     int active_ble = zmk_ble_active_profile_index();
-
-    add_title("OUTPUT");
 
     make_button(s_overlay, "USB", 92,
                 is_usb ? DISPLAY_COLOR_USB_ACTIVE_BG : DISPLAY_COLOR_USB_INACTIVE_BG,
