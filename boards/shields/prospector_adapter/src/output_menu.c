@@ -74,15 +74,20 @@ static void arm_auto_close(void) {
  * is not enabled in this build, so we style a plain lv_obj instead. */
 static void make_button(lv_obj_t *parent, const char *text, int width_pct, uint32_t bg,
                         uint32_t text_color, bool highlighted, enum menu_action action) {
+    lv_color_t base = lv_color_hex(bg);
+
     lv_obj_t *btn = lv_obj_create(parent);
-    lv_obj_set_size(btn, lv_pct(width_pct), 34);
+    lv_obj_set_size(btn, lv_pct(width_pct), 44);
     lv_obj_remove_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_radius(btn, 6, LV_PART_MAIN);
     lv_obj_set_style_border_width(btn, highlighted ? 2 : 0, LV_PART_MAIN);
     lv_obj_set_style_border_color(btn, lv_color_hex(0xffffff), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(btn, lv_color_hex(bg), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(btn, base, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_PART_MAIN);
+    /* Lighten the fill while the button is held, for press feedback. */
+    lv_obj_set_style_bg_color(btn, lv_color_mix(lv_color_white(), base, 80),
+                              LV_PART_MAIN | LV_STATE_PRESSED);
     lv_obj_set_style_pad_all(btn, 0, LV_PART_MAIN);
     lv_obj_add_event_cb(btn, on_click, LV_EVENT_CLICKED, (void *)(intptr_t)action);
 
