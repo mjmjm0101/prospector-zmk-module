@@ -2,6 +2,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/led.h>
 #include <zephyr/init.h>
+#include <zephyr/input/input.h>
 
 #include <zmk/event_manager.h>
 #include <zmk/events/position_state_changed.h>
@@ -16,6 +17,11 @@ LOG_MODULE_REGISTER(idle_dim, 4);
  * backlight after a period without input instead of relying on ZMK's single
  * activity-idle step. Any key event from the split halves arrives here as a
  * zmk_position_state_changed event and restores full brightness.
+ *
+ * When a Hynitron CST816S touch panel is present (status screen wake-on-touch),
+ * its Zephyr input events also restore the backlight via an input callback. ZMK
+ * itself un-blanks the display from those same events through its activity
+ * subsystem (requires CONFIG_ZMK_POINTING); here we only own the backlight.
  *
  * Only used in fixed-brightness mode; with the ambient light sensor enabled the
  * als_thread in brightness.c owns the backlight instead.
@@ -65,6 +71,22 @@ static int activity_listener(const zmk_event_t *eh) {
 
 ZMK_LISTENER(prospector_idle_dim, activity_listener);
 ZMK_SUBSCRIPTION(prospector_idle_dim, zmk_position_state_changed);
+
+#if DT_HAS_COMPAT_STATUS_OKAY(hynitron_cst816s)
+/* Wake the backlight on any touch. The split halves' keys come in as ZMK
+ * events above; touch arrives as a raw Zephyr input event instead, so we hook
+ * it directly. Bound to the touch device only, so unrelated input (if any) is
+ * ignored. */
+static void touch_wake_cb(struct input_event *ev, void *user_data) {
+    ARG_UNUSED(ev);
+    ARG_UNUSED(user_data);
+    set_bl(BRIGHT_NORMAL);
+    arm_timers();
+}
+
+INPUT_CALLBACK_DEFINE(DEVICE_DT_GET(DT_COMPAT_GET_ANY_STATUS_OKAY(hynitron_cst816s)),
+                      touch_wake_cb, NULL);
+#endif
 
 static int idle_dim_init(void) {
     arm_timers();
