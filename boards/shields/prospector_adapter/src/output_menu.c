@@ -81,11 +81,6 @@ static void endpoint_work_cb(struct k_work *work) {
         zmk_ble_prof_select(pending_bt_index);
         break;
     case OP_CLEAR:
-        /* Drop the current host link first. Clearing the bond while still
-         * connected leaves a zombie connection that blocks re-pairing until a
-         * power cycle; disconnecting frees the profile so the freshly-opened
-         * advertisement accepts a new pairing right away. */
-        zmk_ble_prof_disconnect(zmk_ble_active_profile_index());
         zmk_ble_clear_bonds(); /* unpair the active profile, then re-advertise */
         break;
     default:
