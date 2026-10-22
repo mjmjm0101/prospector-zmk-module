@@ -91,3 +91,16 @@ config PROSPECTOR_TOUCH_OUTPUT_MENU
       output endpoint (USB / BT1-BT4) and clearing a paired BLE profile.
       Requires a touch controller (e.g. Hynitron CST816S) wired as an LVGL
       pointer input. Currently implemented for the operator layout.
+config PROSPECTOR_STUCK_KEY_RELEASE
+    bool "Force-release non-modifier keys that stay pressed too long"
+    default n
+    help
+      Watchdog for stuck keys on the dongle. Any non-modifier HID keycode that
+      remains pressed longer than PROSPECTOR_STUCK_KEY_TIMEOUT_MS gets a
+      synthetic release. Modifier usages and layer keys are not affected.
+      Note: this also cuts key auto-repeat of plain keys at the timeout.
+
+config PROSPECTOR_STUCK_KEY_TIMEOUT_MS
+    int "Stuck key timeout (ms)"
+    default 2000
+    depends on PROSPECTOR_STUCK_KEY_RELEASE

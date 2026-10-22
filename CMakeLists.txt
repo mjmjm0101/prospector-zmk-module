@@ -17,5 +17,6 @@ if(CONFIG_SHIELD_PROSPECTOR_ADAPTER)
 
         zephyr_library_sources(src/events/split_central_status_changed.c)
         zephyr_library_sources(src/split/bluetooth/central_status_changed_observer.c)
+        zephyr_library_sources_ifdef(CONFIG_PROSPECTOR_STUCK_KEY_RELEASE src/stuck_key_release.c)
 
 endif()
